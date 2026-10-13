@@ -1,0 +1,132 @@
+
+package org.softwaretechnologies;
+
+import java.math.BigDecimal;
+import java.math.RoundingMode;
+
+public class Money {
+
+    private final MoneyType type;
+    private final BigDecimal amount;
+
+    public Money(MoneyType type, BigDecimal amount) {
+        this.type = type;
+        this.amount = amount;
+    }
+
+    /**
+     * Два объекта равны, если у них одинаковая валюта
+     * и одинаковая сумма после округления до 4 знаков.
+     */
+    @Override
+    public boolean equals(Object obj) {
+        if (this == obj) {
+            return true;
+        }
+
+        if (!(obj instanceof Money)) {
+            return false;
+        }
+
+        Money other = (Money) obj;
+
+        if (type != other.type) {
+            return false;
+        }
+
+        if (amount == null || other.amount == null) {
+            return amount == null && other.amount == null;
+        }
+
+        BigDecimal roundedAmount =
+                amount.setScale(4, RoundingMode.HALF_UP);
+
+        BigDecimal roundedOtherAmount =
+                other.amount.setScale(4, RoundingMode.HALF_UP);
+
+        return roundedAmount.compareTo(roundedOtherAmount) == 0;
+    }
+
+    /**
+     * Вычисляет хеш по округленной сумме и типу валюты.
+     */
+    @Override
+    public int hashCode() {
+        int currencyCode;
+
+        if (type == MoneyType.USD) {
+            currencyCode = 1;
+        } else if (type == MoneyType.EURO) {
+            currencyCode = 2;
+        } else if (type == MoneyType.RUB) {
+            currencyCode = 3;
+        } else if (type == MoneyType.KRONA) {
+            currencyCode = 4;
+        } else {
+            currencyCode = 5;
+        }
+
+        if (amount == null) {
+            return 10000 + currencyCode;
+        }
+
+        BigDecimal roundedAmount =
+                amount.setScale(4, RoundingMode.HALF_UP);
+
+        BigDecimal scaledAmount = roundedAmount.movePointRight(4);
+
+        if (scaledAmount.compareTo(
+                BigDecimal.valueOf(Integer.MAX_VALUE - 5L)) >= 0) {
+            return Integer.MAX_VALUE;
+        }
+
+        if (scaledAmount.compareTo(
+                BigDecimal.valueOf(Integer.MIN_VALUE)) < 0) {
+            return Integer.MIN_VALUE;
+        }
+
+        return scaledAmount.intValue() + currencyCode;
+    }
+
+    /**
+     * Формат: ТИП_ВАЛЮТЫ: количество.XXXX
+     */
+    @Override
+    public String toString() {
+        String typeString =
+                type == null ? "null" : type.toString();
+
+        if (amount == null) {
+            return typeString + ": null";
+        }
+
+        BigDecimal roundedAmount =
+                amount.setScale(4, RoundingMode.HALF_UP);
+
+        return typeString + ": " + roundedAmount.toPlainString();
+    }
+
+    public BigDecimal getAmount() {
+        return amount;
+    }
+
+    public MoneyType getType() {
+        return type;
+    }
+
+    public static void main(String[] args) {
+        Money money = new Money(
+                MoneyType.EURO,
+                BigDecimal.valueOf(10.00012)
+        );
+
+        Money money1 = new Money(
+                MoneyType.USD,
+                BigDecimal.valueOf(10.5000)
+        );
+
+        System.out.println(money.toString());
+        System.out.println(money1.hashCode());
+        System.out.println(money.equals(money1));
+    }
+}
